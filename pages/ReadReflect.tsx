@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { PODCASTS } from '../constants';
 import { Note, NoteType, ChatMessage } from '../types';
 import { extractInsight, chatWithContext } from '../services/geminiService';
+import { generateReportHTML } from '../services/reportGenerator';
 import { Button } from '../components/Button';
 import { ArrowLeft, Download, Highlighter, Sparkles, MessageSquare, Trash2, Edit2, X, Send, Save, ArrowUp, ChevronRight } from 'lucide-react';
 
@@ -127,7 +128,19 @@ export const ReadReflect: React.FC = () => {
   };
 
   const handleExport = () => {
-    alert("In a real implementation, this would generate and download the HTML report styled like a newspaper.");
+    if (!podcast) return;
+    
+    const htmlContent = generateReportHTML(podcast, notes);
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `podecho-report-${podcast.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Scroll chat to bottom
