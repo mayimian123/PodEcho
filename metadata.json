@@ -1,0 +1,5 @@
+{
+  "name": "PodEcho",
+  "description": "A deep learning platform for podcasts that allows users to highlight, extract insights via AI, and have Socratic dialogues with content.",
+  "requestFramePermissions": []
+}
