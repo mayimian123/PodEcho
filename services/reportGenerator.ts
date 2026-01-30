@@ -1,4 +1,5 @@
 import { Podcast, Note, NoteType } from '../types';
+import { marked } from 'marked';
 
 export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
   const highlights = notes.filter(n => n.type === NoteType.HIGHLIGHT);
@@ -6,6 +7,15 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
   const deepDives = notes.filter(n => n.type === NoteType.DEEP_DIVE);
   
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Use marked to parse markdown in content, ensuring it's a string
+  const parseMarkdown = (text: string) => {
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        return text;
+    }
+  };
 
   // Inline CSS for the report
   const styles = `
@@ -48,9 +58,6 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
       position: relative;
       overflow: hidden;
     }
-    /* Ensure text is readable on darker part of gradient by checking contrast or just using white if needed, 
-       but design spec says deep-space-blue mostly. We'll add a semi-transparent white overlay if needed, 
-       but strictly following the spec "toffee to seashell" */
     
     .summary-section { margin-bottom: 24px; }
     .summary-section:last-child { margin-bottom: 0; }
@@ -75,6 +82,9 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
     .quote-box { background: #F9EFE9; padding: 12px 16px; border-radius: 8px; font-family: "Merriweather", serif; font-style: italic; color: #555; font-size: 14px; margin-bottom: 12px; line-height: 1.6; }
     .note-content { font-size: 15px; line-height: 1.6; color: #1E293B; }
     .insight-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: #727C8B; margin-bottom: 4px; display: block; }
+    
+    /* Strong/Bold handling within generated markdown content */
+    strong, b { font-weight: 700; color: #1E293B; }
 
     .footer { text-align: center; margin-top: 64px; padding-top: 32px; border-top: 1px solid #EBECEE; }
     .footer-brand { font-size: 12px; color: #727C8B; font-weight: 500; }
@@ -90,7 +100,6 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
   `;
 
   // Mock Summary Content for the Demo
-  // In a real app, this would be passed or generated via AI before export
   const summaryHTML = `
       <div class="summary-section">
         <div class="summary-heading">✨ Core Insights</div>
@@ -184,7 +193,7 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
           <div class="quote-box">"${note.originalText}"</div>
           <div class="note-content">
             <span class="insight-label">Insight</span>
-            ${note.content}
+            ${parseMarkdown(note.content || '')}
           </div>
         </div>
       `).join('')}
@@ -199,7 +208,7 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
           <div class="quote-box">"${note.originalText}"</div>
           <div class="note-content">
             <span class="insight-label">Reflection</span>
-            <div style="white-space: pre-wrap;">${note.content}</div>
+            <div style="white-space: pre-wrap;">${parseMarkdown(note.content || '')}</div>
           </div>
         </div>
       `).join('')}

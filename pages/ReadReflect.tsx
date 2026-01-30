@@ -5,7 +5,8 @@ import { Note, NoteType, ChatMessage } from '../types';
 import { extractInsight, chatWithContext } from '../services/geminiService';
 import { generateReportHTML } from '../services/reportGenerator';
 import { Button } from '../components/Button';
-import { ArrowLeft, Download, Highlighter, Sparkles, MessageSquare, Trash2, Edit2, X, Send, Save, ArrowUp, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Download, Highlighter, Sparkles, MessageSquare, Trash2, Edit2, X, Send, Save, ArrowUp, ChevronRight, FileCode, FileText } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const ReadReflect: React.FC = () => {
   const { id } = useParams();
@@ -17,7 +18,8 @@ export const ReadReflect: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isAiThinking, setIsAiThinking] = useState(false);
-  const [chatContext, setChatContext] = useState<string>(''); // The selected text for deep dive
+  const [chatContext, setChatContext] = useState<string>(''); 
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   
   // Selection Popover State
   const [selectionRange, setSelectionRange] = useState<Range | null>(null);
@@ -127,9 +129,8 @@ export const ReadReflect: React.FC = () => {
     setChatContext('');
   };
 
-  const handleExport = () => {
+  const handleExportHTML = () => {
     if (!podcast) return;
-    
     const htmlContent = generateReportHTML(podcast, notes);
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -141,6 +142,26 @@ export const ReadReflect: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportPDF = () => {
+    if (!podcast) return;
+    const htmlContent = generateReportHTML(podcast, notes);
+    
+    // Open in new window and trigger print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      // Allow images/styles to load then print
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        // Optional: printWindow.close();
+      }, 500);
+    }
+    setIsExportMenuOpen(false);
   };
 
   // Scroll chat to bottom
@@ -163,9 +184,36 @@ export const ReadReflect: React.FC = () => {
           <div className="h-6 w-px bg-platinum mx-2"></div>
           <span className="text-slate-grey text-sm truncate max-w-md">{podcast.title}</span>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleExport} className="hidden md:flex gap-2">
-          <Download size={16} /> Export Report
-        </Button>
+        
+        <div className="hidden md:flex relative">
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)} 
+            className="flex gap-2"
+          >
+            <Download size={16} /> Export Report
+          </Button>
+
+          {isExportMenuOpen && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-platinum overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+              <button 
+                onClick={handleExportHTML}
+                className="w-full text-left px-4 py-3 text-sm text-deep-space-blue hover:bg-parchment flex items-center gap-2"
+              >
+                <FileCode size={16} className="text-toffee-brown" />
+                Export HTML
+              </button>
+              <button 
+                onClick={handleExportPDF}
+                className="w-full text-left px-4 py-3 text-sm text-deep-space-blue hover:bg-parchment flex items-center gap-2 border-t border-platinum"
+              >
+                <FileText size={16} className="text-toffee-brown" />
+                Export PDF
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Content Split */}
@@ -174,9 +222,9 @@ export const ReadReflect: React.FC = () => {
         {/* Left: Transcript Area (65%) */}
         <div className="w-[65%] overflow-y-auto bg-white p-12 relative" >
           <div className="max-w-2xl mx-auto pb-24" ref={transcriptRef}>
-            <h2 className="text-3xl font-serif font-bold text-deep-space-blue mb-8">Transcript</h2>
-            <div className="prose prose-lg text-deep-space-blue leading-relaxed font-serif whitespace-pre-wrap selection:bg-highlight-yellow selection:text-deep-space-blue">
-               {podcast.fullTranscript}
+            <h2 className="text-3xl font-serif font-bold text-deep-space-blue mb-8">Read and Reflect</h2>
+            <div className="prose prose-lg text-deep-space-blue leading-relaxed font-serif selection:bg-highlight-yellow selection:text-deep-space-blue">
+               <ReactMarkdown>{podcast.fullTranscript}</ReactMarkdown>
             </div>
           </div>
 

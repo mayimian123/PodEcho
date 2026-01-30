@@ -4,6 +4,7 @@ import { NavBar } from '../components/NavBar';
 import { PODCASTS } from '../constants';
 import { Button } from '../components/Button';
 import { Play, ArrowRight, BookOpen } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const PodcastDetail: React.FC = () => {
   const { id } = useParams();
@@ -96,8 +97,10 @@ export const PodcastDetail: React.FC = () => {
 
         {activeTab === 'transcript' && (
           <div className="animate-fade-in">
-             <div className="bg-white p-8 rounded-xl border border-platinum text-deep-space-blue leading-loose whitespace-pre-wrap font-serif">
-                {podcast.fullTranscript}
+             <div className="bg-white p-8 rounded-xl border border-platinum text-deep-space-blue leading-loose font-serif selection:bg-highlight-yellow selection:text-deep-space-blue">
+                <ReactMarkdown className="prose prose-lg text-deep-space-blue">
+                  {podcast.fullTranscript}
+                </ReactMarkdown>
              </div>
              <div className="mt-8 text-center">
                 <p className="text-slate-grey mb-4">Want to highlight and take notes?</p>
