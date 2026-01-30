@@ -1,9 +1,19 @@
-import React from 'react';
-import { Radio, Mic, PenTool, Brain, FileText, ArrowRight, Share2, Box, Database, ArrowUpRight } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Radio, Mic, PenTool, Brain, FileText, ArrowRight, Share2, Box, Database, ArrowUpRight, CheckSquare, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+
+  // Create refs for scroll targets
+  const listenRef = useRef<HTMLDivElement>(null);
+  const reflectRef = useRef<HTMLDivElement>(null);
+  const evolveRef = useRef<HTMLDivElement>(null);
+
+  // Scroll helper function
+  const scrollToSection = (elementRef: React.RefObject<HTMLDivElement>) => {
+    elementRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="min-h-screen bg-parchment flex flex-col font-sans selection:bg-toffee-brown/20 overflow-x-hidden">
@@ -19,9 +29,24 @@ export const LandingPage: React.FC = () => {
             </div>
             
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-grey">
-              <button className="hover:text-deep-space-blue transition-colors">Listen</button>
-              <button className="hover:text-deep-space-blue transition-colors">Reflect</button>
-              <button className="hover:text-deep-space-blue transition-colors">Evolve</button>
+              <button 
+                onClick={() => scrollToSection(listenRef)}
+                className="hover:text-deep-space-blue transition-colors"
+              >
+                Listen
+              </button>
+              <button 
+                onClick={() => scrollToSection(reflectRef)}
+                className="hover:text-deep-space-blue transition-colors"
+              >
+                Reflect
+              </button>
+              <button 
+                onClick={() => scrollToSection(evolveRef)}
+                className="hover:text-deep-space-blue transition-colors"
+              >
+                Evolve
+              </button>
             </div>
 
             <button 
@@ -57,7 +82,10 @@ export const LandingPage: React.FC = () => {
             >
               Start Your Loop
             </button>
-            <button className="bg-transparent border border-platinum text-deep-space-blue text-base font-medium px-8 py-3.5 rounded-full hover:bg-white hover:border-slate-300 transition-all">
+            <button 
+              onClick={() => scrollToSection(listenRef)}
+              className="bg-transparent border border-platinum text-deep-space-blue text-base font-medium px-8 py-3.5 rounded-full hover:bg-white hover:border-slate-300 transition-all"
+            >
               How it works
             </button>
           </div>
@@ -152,7 +180,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* --- LISTEN & CAPTURE --- */}
-      <section className="py-32 px-6">
+      <section ref={listenRef} className="py-32 px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="w-16 h-16 bg-mint-cream rounded-2xl flex items-center justify-center mb-8 text-toffee-brown">
@@ -187,8 +215,6 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
               
-              {/* Removed Audio Visualizer Animation */}
-
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-xs">
                  {/* Floating Card */}
                  <div className="bg-mint-cream border border-toffee-brown/20 p-4 rounded-xl shadow-lg relative transform transition-transform hover:-translate-y-1">
@@ -208,7 +234,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* --- REFLECT & ECHO --- */}
-      <section className="py-32 px-6 bg-seashell/50">
+      <section ref={reflectRef} className="py-32 px-6 bg-seashell/50">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-platinum mb-8">
             <ArrowRight size={14} className="text-toffee-brown" />
@@ -261,7 +287,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* --- EVOLVE YOUR MIND --- */}
-      <section className="py-32 px-6">
+      <section ref={evolveRef} className="py-32 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-serif text-deep-space-blue mb-6">
             Evolve Your Mind
@@ -270,53 +296,78 @@ export const LandingPage: React.FC = () => {
             Stop letting insights evaporate. Build a compounding library of personal thoughts that grows with you.
           </p>
 
-          <div className="relative bg-white border border-platinum rounded-2xl p-4 md:p-8 shadow-2xl overflow-hidden group">
-            <div className="absolute top-4 left-4 flex gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-100 border border-red-200"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-100 border border-yellow-200"></div>
-              <div className="w-3 h-3 rounded-full bg-green-100 border border-green-200"></div>
-            </div>
+          <div className="relative bg-white border border-platinum rounded-xl shadow-2xl overflow-hidden max-w-4xl mx-auto transition-all hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)]">
             
-            <div className="absolute top-4 right-4 bg-platinum/50 px-2 py-1 rounded text-[10px] font-mono text-slate-grey">
-              knowledge_graph.v2
+            {/* Notion-style Header Bar */}
+            <div className="bg-[#F7F7F5] border-b border-platinum p-4 flex items-center justify-between">
+               <div className="flex gap-2">
+                 <div className="w-3 h-3 rounded-full bg-[#FF5F57] border border-red-300"></div>
+                 <div className="w-3 h-3 rounded-full bg-[#FEBC2E] border border-yellow-300"></div>
+                 <div className="w-3 h-3 rounded-full bg-[#28C840] border border-green-300"></div>
+               </div>
+               <div className="text-xs text-slate-grey/60 font-medium flex items-center gap-2">
+                 <span>PodEcho</span>
+                 <span className="text-slate-grey/30">/</span>
+                 <span>My Second Brain</span>
+               </div>
+               <div className="w-10"></div> {/* Spacer for balance */}
             </div>
 
-            {/* Mock Graph UI */}
-            <div className="aspect-[16/9] bg-slate-50 rounded-xl mt-8 relative flex items-center justify-center overflow-hidden border border-platinum/50">
-               {/* Grid Pattern */}
-               <div className="absolute inset-0" style={{backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '32px 32px', opacity: 0.3}}></div>
+            {/* Notion-style Content Area */}
+            <div className="p-8 md:p-12 text-left font-sans bg-white relative">
                
-               {/* Nodes */}
-               <div className="absolute inset-0">
-                  {/* Central Node */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-16 h-16 bg-deep-space-blue rounded-2xl flex items-center justify-center shadow-lg text-white z-10 relative">
-                      <Database size={24} />
-                    </div>
-                    <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-deep-space-blue tracking-widest uppercase">My Core</span>
+               {/* Cover Image Mock */}
+               <div className="relative mb-12 group">
+                  <div className="h-32 bg-gradient-to-r from-toffee-brown/10 via-platinum to-deep-space-blue/10 rounded-lg overflow-hidden relative">
+                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
-
-                  {/* Removed Mental Models Node */}
-
-                  <div className="absolute bottom-1/3 right-1/3">
-                     <div className="w-10 h-10 bg-white border border-platinum rounded-xl flex items-center justify-center shadow-sm text-slate-grey">
-                        <Share2 size={16} />
-                     </div>
-                     <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[9px] text-slate-grey uppercase whitespace-nowrap">Connections</span>
+                  <div className="absolute -bottom-8 left-8 text-6xl drop-shadow-sm transform hover:scale-110 transition-transform cursor-pointer origin-bottom-left z-10">
+                     🌳
                   </div>
-                  
-                  {/* Connections (SVG Lines) */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none -z-10">
-                    {/* Removed connection line for Mental Models */}
-                    <line x1="50%" y1="50%" x2="65%" y2="65%" stroke="#CBD5E1" strokeWidth="2" />
-                    <line x1="50%" y1="50%" x2="70%" y2="30%" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="4 4" />
-                  </svg>
                </div>
+
+               {/* Title */}
+               <h3 className="text-4xl font-bold text-[#37352F] mb-8 mt-2">My Digital Garden</h3>
                
-               {/* Floating CTA */}
-               <button className="absolute bottom-8 bg-white/90 backdrop-blur border border-platinum px-6 py-3 rounded-full shadow-lg flex items-center gap-2 text-deep-space-blue text-sm font-bold hover:scale-105 transition-transform">
-                 Explore Graph View <ArrowUpRight size={14} />
-               </button>
+               {/* Callout Block */}
+               <div className="bg-[#F1F1EF] p-5 rounded-md flex gap-4 items-start mb-10 text-[#37352F] border border-transparent hover:border-platinum transition-colors">
+                  <span className="text-xl">💡</span>
+                  <div>
+                     <p className="font-semibold text-sm mb-1 text-deep-space-blue">Daily Reflection</p>
+                     <p className="text-sm text-slate-grey leading-relaxed">Information is abundant; wisdom is scarce. Convert the noise into signals by actively tending to your garden.</p>
+                  </div>
+               </div>
+
+               {/* Database View Title */}
+               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-platinum">
+                  <List size={16} className="text-slate-grey" />
+                  <span className="text-xs font-bold text-slate-grey uppercase tracking-wider">Recent Connections</span>
+               </div>
+
+               {/* Database Rows (Notion List View Style) */}
+               <div className="space-y-1">
+                  {[
+                     { icon: "🧠", title: "The Feynman Technique", tag: "Learning", tagColor: "bg-orange-100 text-orange-800" },
+                     { icon: "⚓", title: "Mental Hooks for Memory", tag: "Neuroscience", tagColor: "bg-blue-100 text-blue-800" },
+                     { icon: "🕸️", title: "Networked Thought", tag: "Systems", tagColor: "bg-purple-100 text-purple-800" },
+                     { icon: "📉", title: "Pareto Principle in Study", tag: "Productivity", tagColor: "bg-green-100 text-green-800" }
+                  ].map((row, i) => (
+                     <div key={i} className="group flex items-center justify-between p-2 rounded hover:bg-[#F1F1EF] cursor-pointer transition-colors">
+                        <div className="flex items-center gap-3">
+                           <span className="text-lg w-6 text-center opacity-80">{row.icon}</span>
+                           <span className="text-sm font-medium text-[#37352F] border-b border-transparent group-hover:border-slate-300 transition-all">{row.title}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                           <span className={`text-[10px] px-2 py-0.5 rounded ${row.tagColor} font-medium`}>{row.tag}</span>
+                        </div>
+                     </div>
+                  ))}
+                  
+                  <div className="pt-2 pl-2 text-xs text-slate-grey/50 hover:text-slate-grey cursor-pointer transition-colors flex items-center gap-1">
+                     <span className="text-lg">+</span> New Integration
+                  </div>
+               </div>
+
             </div>
           </div>
         </div>
