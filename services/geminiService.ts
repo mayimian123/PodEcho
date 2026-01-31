@@ -70,12 +70,13 @@ export const streamDeepDive = async (
 export const generateSummary = async (
   podcastTitle: string,
   stats: any,
-  notes: any[]
+  notes: any[],
+  shownotes: string
 ): Promise<any> => {
   const res = await fetch(`${API_BASE}/summary`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ podcast_title: podcastTitle, stats, notes }),
+    body: JSON.stringify({ podcast_title: podcastTitle, stats, notes, shownotes }),
   });
   if (!res.ok) return null;
   return res.json();

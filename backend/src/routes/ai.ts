@@ -61,14 +61,14 @@ router.post('/deep-dive', async (req, res) => {
 
 // POST /api/ai/summary
 router.post('/summary', async (req, res) => {
-    const { podcast_title, stats, notes } = req.body;
+    const { podcast_title, stats, notes, shownotes } = req.body;
 
     if (!stats || !notes) {
         return res.status(400).json({ error: 'Stats and notes are required' });
     }
 
     try {
-        const summary = await generateSummary(podcast_title || 'Podcast', stats, notes);
+        const summary = await generateSummary(podcast_title || 'Podcast', stats, notes, shownotes || '');
         res.json(summary);
     } catch (error) {
         res.status(500).json({ error: 'Failed to generate summary' });

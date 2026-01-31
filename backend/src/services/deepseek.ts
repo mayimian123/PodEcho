@@ -142,31 +142,35 @@ Summarize their key insights in 100-150 words:
 export const generateSummary = async (
     podcastTitle: string,
     stats: { highlight_count: number; extract_count: number; deep_dive_count: number },
-    notes: any[]
+    notes: any[],
+    shownotes: string
 ): Promise<any> => {
     try {
         const prompt = `
 Please generate a learning summary for the podcast "${podcastTitle}".
 
-User Stats:
-        - Highlights: ${stats.highlight_count}
-        - Extracts: ${stats.extract_count}
-        - Deep Dives: ${stats.deep_dive_count}
+Podcast Shownotes:
+${shownotes}
 
-All Notes:
+User Stats:
+- Highlights: ${stats.highlight_count}
+- Extracts: ${stats.extract_count}
+- Deep Dives: ${stats.deep_dive_count}
+
+All Notes (Highlights, Extracts, Deep Dive Summaries):
 ${JSON.stringify(notes, null, 2)}
 
-Please generate a warm, encouraging summary(JSON format) with:
-        1. ** core_insights ** (2 - 3 sentences): What touched the user most ?
-            2. ** personal_growth ** (3 points, 15 - 25 words each): New thinking / connections.
-3. ** actionable_tips ** (1 - 2 points, 20 - 30 words each): Specific actions.
+Please generate a warm, encouraging summary (JSON format) with:
+1. **core_insights** (2-3 sentences): What touched the user most? Connect their notes to the podcast themes.
+2. **personal_growth** (3 points, 15-25 words each): New thinking/connections.
+3. **actionable_tips** (1-2 points, 20-30 words each): Specific actions.
 
-            Tone: Warm, "You" focused.
+Tone: Warm, "You" focused.
 Output strictly valid JSON.
     `;
 
         const response = await openai.chat.completions.create({
-            model: MODEL, // Or deepseek-reasoner if available/needed for complex logic, but chat is fine
+            model: MODEL,
             messages: [
                 { role: 'system', content: 'You are a helpful learning assistant. Output JSON only.' },
                 { role: 'user', content: prompt }

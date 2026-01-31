@@ -21,6 +21,9 @@ export const ReadReflect: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [showReportPreview, setShowReportPreview] = useState(false);
   const [chatContext, setChatContext] = useState<string>('');
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
@@ -29,6 +32,53 @@ export const ReadReflect: React.FC = () => {
   const [popoverPos, setPopoverPos] = useState<{ top: number, left: number } | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // ... (existing useEffects)
+
+  const handleGenerateReport = async () => {
+    setIsExportMenuOpen(false);
+    setIsGeneratingReport(true);
+    setShowReportPreview(true); // Open modal immediately to show loading state
+
+    if (!podcast) return;
+
+    const stats = {
+      highlight_count: notes.filter(n => n.type === NoteType.HIGHLIGHT).length,
+      extract_count: notes.filter(n => n.type === NoteType.EXTRACT).length,
+      deep_dive_count: notes.filter(n => n.type === NoteType.DEEP_DIVE).length,
+    };
+
+    try {
+      // Pass shownotes to summary generation 
+      // Note: podcast.shownotes might be undefined if not in interface yet, check it.
+      // We added shownotes to Podcast interface in step 782.
+      const data = await generateSummary(podcast.title, stats, notes, podcast.shownotes || '');
+      setSummaryData(data);
+    } catch (e) {
+      console.error("Failed to generate report summary", e);
+      // Allow manual export even if summary fails? Maybe just show error in modal.
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const confirmExportHTML = () => {
+    if (!podcast) return;
+    const htmlContent = generateReportHTML(podcast, notes, summaryData);
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `podecho-report-${podcast.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowReportPreview(false);
+  };
+
+  // ... existing handleExportPDF ...
 
   // --- Selection Logic ---
 
@@ -223,30 +273,11 @@ export const ReadReflect: React.FC = () => {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+            onClick={handleGenerateReport}
             className="flex gap-2"
           >
-            <Download size={16} /> Export Report
+            <Sparkles size={16} /> Generate Report Summary
           </Button>
-
-          {isExportMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-platinum overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
-              <button
-                onClick={handleExportHTML}
-                className="w-full text-left px-4 py-3 text-sm text-deep-space-blue hover:bg-parchment flex items-center gap-2"
-              >
-                <FileCode size={16} className="text-toffee-brown" />
-                Export HTML
-              </button>
-              <button
-                onClick={handleExportPDF}
-                className="w-full text-left px-4 py-3 text-sm text-deep-space-blue hover:bg-parchment flex items-center gap-2 border-t border-platinum"
-              >
-                <FileText size={16} className="text-toffee-brown" />
-                Export PDF
-              </button>
-            </div>
-          )}
         </div>
       </header>
 
@@ -426,6 +457,78 @@ export const ReadReflect: React.FC = () => {
 
         </div>
       </div>
+      {/* Report Preview Modal */}
+      {showReportPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border border-platinum">
+            <div className="p-6 border-b border-platinum flex justify-between items-center bg-seashell">
+              <h3 className="text-xl font-serif font-bold text-deep-space-blue flex items-center gap-2">
+                <Sparkles size={20} className="text-toffee-brown" />
+                Report Summary Setup
+              </h3>
+              <button onClick={() => setShowReportPreview(false)} className="text-slate-grey hover:text-deep-space-blue">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8">
+              {isGeneratingReport ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-grey space-y-4">
+                  <div className="w-12 h-12 border-4 border-toffee-brown/30 border-t-toffee-brown rounded-full animate-spin"></div>
+                  <p className="font-medium">AI is synthesizing your learning journey...</p>
+                  <p className="text-sm opacity-75">Analyzing notes, highlights, and deep dives.</p>
+                </div>
+              ) : summaryData ? (
+                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                  <div className="bg-gradient-to-br from-toffee-brown/5 to-transparent p-6 rounded-xl border border-toffee-brown/10">
+                    <h4 className="font-bold text-toffee-brown mb-4 flex items-center gap-2">✨ Core Insights</h4>
+                    <p className="text-deep-space-blue leading-relaxed">{summaryData.core_insights}</p>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="bg-mint-cream p-6 rounded-xl border border-platinum">
+                      <h4 className="font-bold text-deep-space-blue mb-4 flex items-center gap-2">🌱 Personal Growth</h4>
+                      <ul className="space-y-2">
+                        {summaryData.personal_growth && summaryData.personal_growth.map((item: string, i: number) => (
+                          <li key={i} className="text-sm text-slate-grey flex gap-2">
+                            <span className="text-green-500">•</span> {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-seashell p-6 rounded-xl border border-platinum">
+                      <h4 className="font-bold text-deep-space-blue mb-4 flex items-center gap-2">🎯 Action Items</h4>
+                      <ul className="space-y-2">
+                        {summaryData.actionable_tips && summaryData.actionable_tips.map((item: string, i: number) => (
+                          <li key={i} className="text-sm text-slate-grey flex gap-2">
+                            <span className="text-toffee-brown">•</span> {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="text-center text-sm text-slate-grey italic">
+                    This summary will be included at the top of your exported HTML report.
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-red-500">
+                  Failed to generate summary. You can still export the raw notes.
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-platinum bg-white flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setShowReportPreview(false)}>Cancel</Button>
+              <Button onClick={confirmExportHTML} disabled={isGeneratingReport}>
+                <Download size={18} className="mr-2" />
+                Export HTML Report
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

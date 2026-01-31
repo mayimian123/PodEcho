@@ -1,19 +1,19 @@
 import { Podcast, Note, NoteType } from '../types';
 import { marked } from 'marked';
 
-export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
+export const generateReportHTML = (podcast: Podcast, notes: Note[], summaryData?: any): string => {
   const highlights = notes.filter(n => n.type === NoteType.HIGHLIGHT);
   const extracts = notes.filter(n => n.type === NoteType.EXTRACT);
   const deepDives = notes.filter(n => n.type === NoteType.DEEP_DIVE);
-  
+
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   // Use marked to parse markdown in content, ensuring it's a string
   const parseMarkdown = (text: string) => {
     try {
-        return marked.parse(text);
+      return marked.parse(text);
     } catch (e) {
-        return text;
+      return text;
     }
   };
 
@@ -99,34 +99,40 @@ export const generateReportHTML = (podcast: Podcast, notes: Note[]): string => {
     }
   `;
 
-  // Mock Summary Content for the Demo
-  const summaryHTML = `
+  let summaryHTML = '';
+
+  if (summaryData) {
+    const { core_insights, personal_growth, actionable_tips } = summaryData;
+
+    summaryHTML = `
       <div class="summary-section">
         <div class="summary-heading">✨ Core Insights</div>
         <div class="summary-content">
-          Based on your notes, the key theme is the shift from passive information consumption to active engagement. The "Pass-through" effect prevents retention, while techniques like the Feynman method create the mental resistance needed for true learning.
+          ${core_insights || 'No insights generated.'}
         </div>
       </div>
+      
       <div class="summary-section">
         <div class="summary-heading">🌱 Personal Growth</div>
         <div class="summary-content">
-          <ul>
-            <li>You focused heavily on the concept of "Active Resistance" to improve memory.</li>
-            <li>You explored the comparison between neural rewiring and muscle growth.</li>
-            <li>You identified the need for better tools to "digest" content rather than just consuming it.</li>
-          </ul>
+          ${personal_growth && personal_growth.length > 0 ?
+        `<ul>${personal_growth.map((item: string) => `<li>${item}</li>`).join('')}</ul>`
+        : 'No growth points generated.'}
         </div>
       </div>
+      
       <div class="summary-section">
         <div class="summary-heading">🎯 Action Items</div>
         <div class="summary-content">
-          <ul>
-            <li>Practice stopping a podcast every 15 minutes to summarize a point.</li>
-            <li>Try to derive a conclusion before the host finishes their explanation.</li>
-          </ul>
+          ${actionable_tips && actionable_tips.length > 0 ?
+        `<ul>${actionable_tips.map((item: string) => `<li>${item}</li>`).join('')}</ul>`
+        : 'No action items generated.'}
         </div>
       </div>
-  `;
+      `;
+  } else {
+    summaryHTML = `<div style="text-align:center; padding: 20px; color: #727C8B;">Summary waiting to be generated...</div>`;
+  }
 
   return `
 <!DOCTYPE html>
