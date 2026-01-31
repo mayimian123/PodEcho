@@ -7,7 +7,7 @@ const router = Router();
 const TRANSCRIPTS_DIR = path.join(__dirname, '../../transcripts');
 
 // GET /api/podcasts - List all podcasts
-router.get('/', (req, res) => {
+router.get('/api/podcasts', (req, res) => {
     try {
         const podcasts = db.prepare(`
       SELECT id, title, description, cover_image, duration, host, created_at, audio_url 
