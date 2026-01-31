@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getPodcastById } from '../services/podcastService';
 import { Podcast, Note, NoteType, ChatMessage } from '../types';
-import { extractInsight, streamDeepDive, generateSummary } from '../services/geminiService';
+import { extractInsight, streamDeepDive, generateSummary, summarizeChat } from '../services/geminiService';
 import { generateReportHTML } from '../services/reportGenerator';
 import { Button } from '../components/Button';
 import { ArrowLeft, Download, Highlighter, Sparkles, MessageSquare, Trash2, Edit2, X, Send, Save, ArrowUp, ChevronRight, FileCode, FileText } from 'lucide-react';
@@ -140,19 +140,27 @@ export const ReadReflect: React.FC = () => {
   };
 
   const saveDeepDive = async () => {
+    setIsAiThinking(true);
+    let summary = "Chat session saved.";
+    try {
+      summary = await summarizeChat(chatContext, chatHistory);
+    } catch (e) {
+      console.error("Failed to summarize chat", e);
+    }
+
     // Save conversation as a note
-    const summary = "Chat Session saved. (AI Summary would appear here in full version)";
     const newNote: Note = {
       id: Date.now().toString(),
       type: NoteType.DEEP_DIVE,
       originalText: chatContext,
-      content: summary + "\n\nLast thought: " + chatHistory[chatHistory.length - 1].text,
+      content: summary,
       timestamp: Date.now(),
     };
     setNotes(prev => [newNote, ...prev]);
     setSidebarMode('notes');
     setChatHistory([]);
     setChatContext('');
+    setIsAiThinking(false);
   };
 
   const handleExportHTML = () => {

@@ -23,7 +23,7 @@ export const streamDeepDive = async (
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       original_text: originalText,
-      history: history.map(h => ({ role: h.role, content: h.text })), // Map 'model' to 'assistant' if needed, or backend handles it. Backend expects {role, content}
+      history: history.map(h => ({ role: h.role === 'model' ? 'assistant' : h.role, content: h.text })),
       user_message: userMessage
     }),
   });
@@ -79,6 +79,23 @@ export const generateSummary = async (
   });
   if (!res.ok) return null;
   return res.json();
+};
+
+export const summarizeChat = async (
+  originalText: string,
+  history: { role: 'user' | 'model'; text: string }[]
+): Promise<string> => {
+  const res = await fetch(`${API_BASE}/chat-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      original_text: originalText,
+      history: history.map(h => ({ role: h.role === 'model' ? 'assistant' : h.role, content: h.text }))
+    }),
+  });
+  if (!res.ok) return "Discussion saved.";
+  const data = await res.json();
+  return data.summary;
 };
 
 // Backwards compatibility if needed, but we are replacing usage

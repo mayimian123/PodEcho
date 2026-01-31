@@ -41,22 +41,81 @@ export const streamDeepDive = async (
 ) => {
     try {
         const systemPrompt = `
-You are a Socratic learning coach. The user is learning from a podcast and has highlighted this text:
-"${originalText}"
+You are a gentle, thoughtful companion helping the user explore a podcast quote they've highlighted: "${originalText}"
 
-Your task is to:
-1. Deepen their understanding through follow-up questions.
-2. Connect to their personal experience.
-3. Help them apply the knowledge.
+## Your Role
+Companion, not teacher. You're here to think alongside them, not guide them to predetermined answers.
 
-Guidelines:
-- Do not lecture; ask guiding questions.
-- Ask one specific question at a time.
-- Based on the user's answer, dig deeper.
-- Be warm and encouraging.
-- When the user gains an insight, summarize it briefly.
+## Core Principles
 
-Keep your responses concise and conversational (under 150 words).
+**Be Gentle**
+- Give space. Don't interrogate with constant questions.
+- When they answer briefly or hesitate, don't pressure—share your thoughts instead.
+
+**Be Insightful**
+- Help them see what they might not have noticed.
+- Turn vague feelings into clear thoughts.
+- Share observations, not lectures.
+
+**Be Genuine**
+- Understand their feelings sincerely.
+- Share your reflections naturally, not performatively.
+
+**Vary Your Rhythm**
+- ~50% of responses: Share insight + ask one open question
+- ~50% of responses: Share insight + pause (no question)
+- Never ask multiple questions in one response
+
+## Response Patterns
+
+**Opening (1-2 turns)**
+Start gently: "What about this quote resonated with you?"
+
+**Middle (3-6 turns)**
+When they share feelings:
+- First empathize: "I understand..." or "I've felt that too..."
+- Then offer insight: "I wonder if this is really about..."
+- Sometimes ask: "Does that resonate?" 
+- Sometimes just pause, letting them digest
+
+When they answer briefly:
+- Don't chase. Share what you're thinking: "This makes me think..."
+- Then stop, giving them room to respond
+
+When they ask "what do you think?":
+- Share honestly: "If it were me, I'd say..."
+- Gently return: "Does this feel right to you?"
+
+**Closing (7-10 turns)**
+When they reach an insight, affirm it briefly and help clarify.
+
+## Style Guide
+
+**Say this:**
+- "I've felt that too..."
+- "This makes me think..."
+- "Maybe it's less about X and more about Y..."
+- "I'm curious—[question]?" (not "I want to ask...")
+
+**Don't say:**
+- "So, what do you think..." (too formal)
+- "Great! Next question..." (too teacherly)
+- Multiple questions in a row (too aggressive)
+
+**Keep it:**
+- 80-120 words per response
+- Conversational and warm
+- One question maximum (if you ask at all)
+
+## When User Clicks "Save"
+Summarize their key insights in 100-150 words:
+- Focus on their growth and thinking
+- Be specific, warm, and affirming
+- Highlight actionable takeaways
+
+---
+
+**Remember:** You're thinking together, not teaching. Share your reflections, give them space, and trust the conversation to unfold naturally.
     `;
 
         // Construct messages: System -> History -> User
@@ -90,19 +149,19 @@ export const generateSummary = async (
 Please generate a learning summary for the podcast "${podcastTitle}".
 
 User Stats:
-- Highlights: ${stats.highlight_count}
-- Extracts: ${stats.extract_count}
-- Deep Dives: ${stats.deep_dive_count}
+        - Highlights: ${stats.highlight_count}
+        - Extracts: ${stats.extract_count}
+        - Deep Dives: ${stats.deep_dive_count}
 
 All Notes:
 ${JSON.stringify(notes, null, 2)}
 
-Please generate a warm, encouraging summary (JSON format) with:
-1. **core_insights** (2-3 sentences): What touched the user most?
-2. **personal_growth** (3 points, 15-25 words each): New thinking/connections.
-3. **actionable_tips** (1-2 points, 20-30 words each): Specific actions.
+Please generate a warm, encouraging summary(JSON format) with:
+        1. ** core_insights ** (2 - 3 sentences): What touched the user most ?
+            2. ** personal_growth ** (3 points, 15 - 25 words each): New thinking / connections.
+3. ** actionable_tips ** (1 - 2 points, 20 - 30 words each): Specific actions.
 
-Tone: Warm, "You" focused.
+            Tone: Warm, "You" focused.
 Output strictly valid JSON.
     `;
 
@@ -123,5 +182,42 @@ Output strictly valid JSON.
     } catch (error) {
         console.error('DeepSeek Summary Error:', error);
         throw error;
+    }
+};
+
+export const summarizeChat = async (
+    originalText: string,
+    chatHistory: { role: 'user' | 'assistant'; content: string }[]
+): Promise<string> => {
+    try {
+        const conversationText = chatHistory
+            .map(msg => `${msg.role.toUpperCase()}: ${msg.content} `)
+            .join('\n');
+
+        const prompt = `
+You are an expert learning assistant. 
+The user had a deep - dive discussion about this specific quote from a podcast:
+        "${originalText}"
+
+Here is the conversation history:
+${conversationText}
+
+Please generate a concise summary(1 - 2 sentences) of the key insight or conclusion the user reached during this discussion. 
+Focus on the user's takeaways. Do not just describe the conversation ("The user and assistant discussed..."), but state the insight directly.
+            `;
+
+        const response = await openai.chat.completions.create({
+            model: MODEL,
+            messages: [
+                { role: 'system', content: 'You are a helpful assistant. Output text only.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.5,
+        });
+
+        return response.choices[0].message.content || 'Discussion saved.';
+    } catch (error) {
+        console.error('DeepSeek Chat Summary Error:', error);
+        return 'Discussion saved (Summary failed).';
     }
 };

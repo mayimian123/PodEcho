@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { extractInsight, streamDeepDive, generateSummary } from '../services/deepseek';
+import { extractInsight, streamDeepDive, generateSummary, summarizeChat } from '../services/deepseek';
 
 const router = Router();
 
@@ -72,6 +72,22 @@ router.post('/summary', async (req, res) => {
         res.json(summary);
     } catch (error) {
         res.status(500).json({ error: 'Failed to generate summary' });
+    }
+});
+
+// POST /api/ai/chat-summary
+router.post('/chat-summary', async (req, res) => {
+    const { original_text, history } = req.body;
+
+    if (!original_text || !history) {
+        return res.status(400).json({ error: 'Original text and history are required' });
+    }
+
+    try {
+        const summary = await summarizeChat(original_text, history);
+        res.json({ summary });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to summarize chat' });
     }
 });
 
