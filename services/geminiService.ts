@@ -1,86 +1,87 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-// Helper to get the correct model based on complexity
-const FLASH_MODEL = 'gemini-3-flash-preview'; // Good for extraction (Basic Text Tasks)
-const PRO_MODEL = 'gemini-3-pro-preview'; // Good for reasoning/chat (Complex Text Tasks)
+const API_BASE = 'http://localhost:3000/api/ai';
 
 export const extractInsight = async (text: string): Promise<string> => {
-  if (!process.env.API_KEY) return "API Key missing. Please configure process.env.API_KEY.";
-  
-  try {
-    const prompt = `
-      You are an expert learning assistant. 
-      Analyze the following text from a podcast transcript. 
-      Extract the core underlying concept or insight in a concise, high-impact sentence. 
-      Do not use "The text says" or "The speaker mentions". Just state the insight directly.
-      
-      Text: "${text}"
-    `;
-
-    const response = await ai.models.generateContent({
-      model: FLASH_MODEL,
-      contents: prompt,
-    });
-
-    return response.text || "Could not extract insight.";
-  } catch (error) {
-    console.error("Gemini Extraction Error:", error);
-    return "Error generating insight.";
-  }
+  const res = await fetch(`${API_BASE}/extract`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) return "Could not extract insight.";
+  const data = await res.json();
+  return data.insight;
 };
 
-export const chatWithContext = async (
+// Streaming Helper
+export const streamDeepDive = async (
+  originalText: string,
   history: { role: 'user' | 'model'; text: string }[],
-  contextText: string,
-  userMessage: string
-): Promise<string> => {
-  if (!process.env.API_KEY) return "API Key missing.";
+  userMessage: string,
+  onChunk: (chunk: string) => void
+): Promise<void> => {
+  const response = await fetch(`${API_BASE}/deep-dive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      original_text: originalText,
+      history: history.map(h => ({ role: h.role, content: h.text })), // Map 'model' to 'assistant' if needed, or backend handles it. Backend expects {role, content}
+      user_message: userMessage
+    }),
+  });
 
-  try {
-    const systemInstruction = `
-      You are a Socratic tutor helping a user deepen their understanding of a specific podcast segment.
-      
-      The user is focusing on this specific excerpt: "${contextText}"
-      
-      Your goal is to:
-      1. Answer their questions based on the excerpt.
-      2. Challenge them gently to think deeper.
-      3. Connect ideas to broader concepts (Feynman technique, mental models).
-      4. Keep responses conversational but intellectual.
-      5. Keep responses relatively short (under 150 words) unless asked for elaboration.
-    `;
+  if (!response.body) throw new Error('No response body');
 
-    // Map history to the format expected by the SDK if needed, 
-    // but generateContent is stateless, so we construct the prompt manually or use chat
-    // For this simple implementation, we will use a stateless prompt with history appended for simplicity
-    // or use the Chat API. Let's use Chat API.
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
 
-    const chat = ai.chats.create({
-      model: PRO_MODEL,
-      config: {
-        systemInstruction,
-      },
-      history: history.map(h => ({
-        role: h.role,
-        parts: [{ text: h.text }],
-      })),
-    });
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-    const result = await chat.sendMessage({ message: userMessage });
-    return result.text || "I'm having trouble thinking right now.";
+    // Decode chunk
+    const chunk = decoder.decode(value, { stream: true });
+    buffer += chunk;
 
-  } catch (error) {
-    console.error("Gemini Chat Error:", error);
-    return "Error communicating with AI.";
+    // Process SSE events
+    // data: {...}\n\n
+    const lines = buffer.split('\n\n');
+    // Keep the last incomplete part in buffer
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data: ')) continue;
+
+      const dataStr = trimmed.slice(6);
+      if (dataStr === '[DONE]') return;
+
+      try {
+        const data = JSON.parse(dataStr);
+        if (data.text) {
+          onChunk(data.text);
+        }
+      } catch (e) {
+        console.error('Error parsing SSE data:', e);
+      }
+    }
   }
 };
 
-export const generateSummary = async (notes: any[]): Promise<any> => {
-  if (!process.env.API_KEY) return null;
-  
-  // This would be used for the "Save" feature in deep dive or Export
-  // Mocked for the simple demo flow, but here is how it would work.
-  return "Summary generation not fully implemented in this demo path.";
+export const generateSummary = async (
+  podcastTitle: string,
+  stats: any,
+  notes: any[]
+): Promise<any> => {
+  const res = await fetch(`${API_BASE}/summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ podcast_title: podcastTitle, stats, notes }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+};
+
+// Backwards compatibility if needed, but we are replacing usage
+export const chatWithContext = async () => {
+  throw new Error("Use streamDeepDive instead");
 };

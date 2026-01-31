@@ -8,6 +8,8 @@ export interface Podcast {
   imageUrl: string;
   tags: string[];
   fullTranscript: string;
+  audioUrl?: string;
+  shownotes?: string;
 }
 
 export enum NoteType {
