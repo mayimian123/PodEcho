@@ -1,6 +1,6 @@
 import { Podcast } from '../types';
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 
 export const getPodcasts = async (): Promise<Podcast[]> => {
     const res = await fetch(`${API_BASE}/podcasts`);

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3000/api/ai';
+const API_BASE = '/api/ai';
 
 export const extractInsight = async (text: string): Promise<string> => {
   const res = await fetch(`${API_BASE}/extract`, {
